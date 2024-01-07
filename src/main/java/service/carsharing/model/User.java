@@ -34,7 +34,7 @@ public class User implements UserDetails {
     private String firstName;
     @Column(nullable = false)
     private String lastName;
-    @ManyToMany(fetch = FetchType.LAZY)
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "users_roles",
             joinColumns = @JoinColumn(name = "user_id"),
@@ -42,11 +42,12 @@ public class User implements UserDetails {
     )
     @EqualsAndHashCode.Exclude
     private Set<Role> roles = new HashSet<>();
-    private boolean isDeleted = false;
+    @Column(nullable = false)
+    private boolean deleted = false;
 
     @PreRemove
     public void preRemove() {
-        this.isDeleted = true;
+        this.deleted = true;
     }
 
     @Override
@@ -76,6 +77,6 @@ public class User implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return !isDeleted;
+        return !deleted;
     }
 }

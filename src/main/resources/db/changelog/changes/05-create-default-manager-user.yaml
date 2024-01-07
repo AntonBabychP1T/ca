@@ -11,7 +11,7 @@ databaseChangeLog:
                   value: "manager@gmail.com"
               - column:
                   name: password
-                  value: "$2a$12$OHH9Cu0LBRjMPmsyO0k3G.ENHnKa04.EcRi51LHQ72jAZicuX3S5m"
+                  value: "$2a$10$jTBXk4UqFSqL4VNSRQqkseplX8Z3SthyZcjLniC5JHIViNTcm7fia"
               - column:
                   name: first_name
                   value: "Manager"
@@ -19,7 +19,7 @@ databaseChangeLog:
                   name: last_name
                   value: "Default"
               - column:
-                  name: is_deleted
+                  name: deleted
                   value: 0
   - changeSet:
       id: add-role-to-manager

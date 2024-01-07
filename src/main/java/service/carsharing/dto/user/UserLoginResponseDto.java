@@ -1,4 +1,4 @@
-package service.carsharing.dto;
+package service.carsharing.dto.user;
 
 public record UserLoginResponseDto(String token) {
 }

@@ -7,6 +7,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.PreRemove;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import lombok.Data;
@@ -29,8 +30,10 @@ public class Car {
     private Integer inventory;
     @Column(nullable = false)
     private BigDecimal fee;
+    @Column(nullable = false)
+    private boolean deleted = false;
 
-    private enum Type {
+    public enum Type {
         SEDAN,
         SUV,
         CUV,
@@ -39,5 +42,10 @@ public class Car {
         MINIVAN,
         UNIVERSAL,
         MICRO
+    }
+
+    @PreRemove
+    public void preRemove() {
+        this.deleted = true;
     }
 }

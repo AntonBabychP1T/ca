@@ -7,10 +7,10 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import service.carsharing.dto.UserLoginRequestDto;
-import service.carsharing.dto.UserLoginResponseDto;
-import service.carsharing.dto.UserRegistrationRequestDto;
-import service.carsharing.dto.UserResponseDto;
+import service.carsharing.dto.user.UserLoginRequestDto;
+import service.carsharing.dto.user.UserLoginResponseDto;
+import service.carsharing.dto.user.UserRegistrationRequestDto;
+import service.carsharing.dto.user.UserResponseDto;
 import service.carsharing.security.AuthenticationService;
 import service.carsharing.service.UserService;
 
