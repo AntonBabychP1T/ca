@@ -1,0 +1,36 @@
+databaseChangeLog:
+  - changeSet:
+      id: add-default-manager
+      author: antonbabych
+      changes:
+        - insert:
+            tableName: users
+            columns:
+              - column:
+                  name: email
+                  value: "manager@gmail.com"
+              - column:
+                  name: password
+                  value: "$2a$12$OHH9Cu0LBRjMPmsyO0k3G.ENHnKa04.EcRi51LHQ72jAZicuX3S5m"
+              - column:
+                  name: first_name
+                  value: "Manager"
+              - column:
+                  name: last_name
+                  value: "Default"
+              - column:
+                  name: is_deleted
+                  value: 0
+  - changeSet:
+      id: add-role-to-manager
+      author: antonbabych
+      changes:
+        - insert:
+            tableName: users_roles
+            columns:
+              - column:
+                  name: user_id
+                  value: 1
+              - column:
+                  name: role_id
+                  valueNumeric: 1

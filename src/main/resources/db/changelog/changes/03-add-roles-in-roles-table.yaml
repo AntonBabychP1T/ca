@@ -1,0 +1,21 @@
+databaseChangeLog:
+  - changeSet:
+      id: 1-add-role-admin
+      author: antonbabych
+      changes:
+        - insert:
+            tableName: roles
+            columns:
+              - column:
+                  name: name
+                  value: "ROLE_MANAGER"
+  - changeSet:
+      id: 2-add-role-user
+      author: antonbabych
+      changes:
+        - insert:
+            tableName: roles
+            columns:
+              - column:
+                  name: name
+                  value: "ROLE_CUSTOMER"
