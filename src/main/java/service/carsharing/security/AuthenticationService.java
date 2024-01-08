@@ -1,7 +1,7 @@
 package service.carsharing.security;
 
-import service.carsharing.dto.UserLoginRequestDto;
-import service.carsharing.dto.UserLoginResponseDto;
+import service.carsharing.dto.user.UserLoginRequestDto;
+import service.carsharing.dto.user.UserLoginResponseDto;
 
 public interface AuthenticationService {
     UserLoginResponseDto authentication(UserLoginRequestDto requestDto);
