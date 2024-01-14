@@ -41,5 +41,6 @@ databaseChangeLog:
               - column:
                   name: deleted
                   type: boolean
+                  value: 0
                   constraints:
                     nullable: false
