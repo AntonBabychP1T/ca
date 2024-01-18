@@ -29,6 +29,10 @@ public class RentalServiceImpl implements RentalService {
     @Transactional
     public RentalResponseDto addNewRental(RentalRequestDto requestDto) {
         Car car = getCarById(requestDto.carId());
+        if (car.getInventory() < 1) {
+            throw new RuntimeException("There is no free available car with id: "
+                    + requestDto.carId());
+        }
         car.setInventory(car.getInventory() - 1);
         carRepository.save(car);
         return rentalMapper.toDto(rentalRepository.save(rentalMapper.toModel(requestDto)));
