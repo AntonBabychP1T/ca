@@ -1,0 +1,50 @@
+package service.carsharing.controller;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import service.carsharing.dto.payment.PaymentRequestDto;
+import service.carsharing.dto.payment.PaymentResponseDto;
+import service.carsharing.service.PaymentService;
+
+@Tag(name = "Payment managing", description = "Endpoint to managing payments")
+@RequiredArgsConstructor
+@RestController
+@RequestMapping("/api/payments")
+public class PaymentController {
+    private final PaymentService stripeService;
+
+    @Operation(summary = "Get specify payment", description = "Get payment by id")
+    @GetMapping("/{userId}")
+    public List<PaymentResponseDto> getPayments(Authentication authentication,
+                                                @PathVariable Long userId) {
+        return stripeService.getPayments(authentication.getName(), userId);
+    }
+
+    @PostMapping("/{rentalId}")
+    public PaymentResponseDto createPayment(Authentication authentication,
+                                            @PathVariable Long rentalId) {
+        return stripeService.createPayment(authentication.getName(), rentalId);
+    }
+
+    @GetMapping("/success")
+    public PaymentResponseDto checkSuccessfulPayments(
+            @RequestParam(required = false)PaymentRequestDto requestDto) {
+        return stripeService.checkSuccessfulPayments(requestDto.id());
+    }
+
+    @GetMapping("/cancel")
+    public PaymentResponseDto canceledPayment(
+            @RequestParam(required = false)PaymentRequestDto requestDto) {
+        return stripeService.canceledPayment(requestDto.id());
+    }
+
+}
