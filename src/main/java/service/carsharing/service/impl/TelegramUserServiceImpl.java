@@ -28,7 +28,13 @@ public class TelegramUserServiceImpl implements TelegramUserService {
             botService.sendMessage(chatId, "Not valid email, please send again");
             return;
         }
+        if (telegramUserInfoRepository.findByChatId(chatId).isPresent()) {
+            userStates.get(chatId).setAwaitingEmail(false);
+            userStates.get(chatId).setEmail(username);
+            return;
+        }
         userStates.get(chatId).setAwaitingEmail(false);
+        userStates.get(chatId).setEmail(username);
         TelegramUserInfo telegramUserInfo = new TelegramUserInfo();
         telegramUserInfo.setChatId(chatId);
         telegramUserInfo.setUser(userRepository.findByEmail(username).get());

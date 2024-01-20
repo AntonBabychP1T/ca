@@ -19,6 +19,7 @@ import service.carsharing.model.Payment;
 import service.carsharing.model.Rental;
 import service.carsharing.repository.PaymentRepository;
 import service.carsharing.repository.RentalRepository;
+import service.carsharing.service.NotificationService;
 import service.carsharing.service.PaymentService;
 import service.carsharing.service.UserService;
 
@@ -32,6 +33,7 @@ public class StripeServiceImpl implements PaymentService {
     private final PaymentMapper paymentMapper;
     private final RentalRepository rentalRepository;
     private final UserService userService;
+    private final NotificationService notificationService;
     @Value("${STRIPE_SUCCESS_LINK}")
     private String successUrl;
     @Value("${STRIPE_CANCEL_LINK}")
@@ -46,6 +48,8 @@ public class StripeServiceImpl implements PaymentService {
             Session session = createStripeSession(rental);
             payment.setSessionId(session.getId());
             payment.setSessionUrl(new URL(session.getUrl()));
+            notificationService.sendNotification(userId, "Payment URL: "
+                    + payment.getSessionUrl());
         } catch (StripeException | MalformedURLException e) {
             throw new RuntimeException(e);
         }
@@ -71,6 +75,14 @@ public class StripeServiceImpl implements PaymentService {
         Payment payment = getPaymentBySessionId(id);
         payment.setStatus(Payment.Status.CANCEL);
         return paymentMapper.toDto(paymentRepository.save(payment));
+    }
+
+    private Long getUserIdByPayment(Payment payment) {
+        Long rentalId = payment.getRentalId();
+        Rental rental = rentalRepository.findById(rentalId).orElseThrow(
+                () -> new EntityNotFoundException("Can't find rental with id: " + rentalId)
+        );
+        return rental.getUser().getId();
     }
 
     private Rental validateAndGetRental(Long rentalId, Long userId) {
