@@ -15,6 +15,7 @@ import service.carsharing.model.User;
 import service.carsharing.repository.CarRepository;
 import service.carsharing.repository.RentalRepository;
 import service.carsharing.repository.UserRepository;
+import service.carsharing.service.NotificationService;
 import service.carsharing.service.RentalService;
 
 @RequiredArgsConstructor
@@ -24,18 +25,26 @@ public class RentalServiceImpl implements RentalService {
     private final UserRepository userRepository;
     private final CarRepository carRepository;
     private final RentalMapper rentalMapper;
+    private final NotificationService notificationService;
 
     @Override
     @Transactional
     public RentalResponseDto addNewRental(RentalRequestDto requestDto) {
         Car car = getCarById(requestDto.carId());
         if (car.getInventory() < 1) {
+            notificationService.sendNotification(requestDto.userId(),
+                    "There is no free available car with id: "
+                            + requestDto.carId());
             throw new RuntimeException("There is no free available car with id: "
                     + requestDto.carId());
         }
         car.setInventory(car.getInventory() - 1);
         carRepository.save(car);
-        return rentalMapper.toDto(rentalRepository.save(rentalMapper.toModel(requestDto)));
+        RentalResponseDto responseDto = rentalMapper.toDto(rentalRepository
+                .save(rentalMapper.toModel(requestDto)));
+        notificationService.sendNotification(requestDto.userId(),
+                "Your rental created! Meta info: " + responseDto.toString());
+        return responseDto;
     }
 
     @Override
@@ -62,11 +71,15 @@ public class RentalServiceImpl implements RentalService {
     @Override
     @Transactional
     public RentalResponseDto returnRental(Long rentalId, String email) {
-        Rental rental = getRentalByIdAndUserId(rentalId, getUserByEmail(email).getId());
+        Long userById = getUserByEmail(email).getId();
+        Rental rental = getRentalByIdAndUserId(rentalId, userById);
         Car car = getCarById(rental.getCar().getId());
         car.setInventory(car.getInventory() + 1);
         rental.setActualReturnDate(LocalDate.now());
-        return rentalMapper.toDto(rentalRepository.save(rental));
+        RentalResponseDto responseDto = rentalMapper.toDto(rentalRepository.save(rental));
+        notificationService.sendNotification(userById, "You successfully return your rental"
+                + " with id: " + rentalId);
+        return responseDto;
     }
 
     private User getUserByEmail(String email) {
