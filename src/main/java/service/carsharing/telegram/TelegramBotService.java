@@ -2,7 +2,9 @@ package service.carsharing.telegram;
 
 import java.util.Arrays;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
@@ -19,7 +21,8 @@ public class TelegramBotService extends TelegramLongPollingBot {
     @Value("${TELEGRAM_BOT_USERNAME}")
     private String botUsername;
     private final TelegramUserService telegramUserService;
-    private final CommandDispatcher commandDispatcher;
+    @Autowired
+    private CommandDispatcher commandDispatcher;
 
     @Override
     public void onUpdateReceived(Update update) {
@@ -44,6 +47,11 @@ public class TelegramBotService extends TelegramLongPollingBot {
     @Override
     public String getBotUsername() {
         return botUsername;
+    }
+
+    @EventListener
+    public void onTelegramMessageEvent(TelegramMessageEvent event) {
+        sendMessage(event.getChatId(), event.getMessage());
     }
 
     public void sendMessage(Long chatId, String text) {
