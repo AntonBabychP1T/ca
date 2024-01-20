@@ -1,5 +1,6 @@
 package service.carsharing.service.impl;
 
+import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
@@ -22,6 +23,16 @@ public class NotificationServiceImpl implements NotificationService {
             TelegramUserInfo telegramUserInfo = byUserId.get();
             eventPublisher.publishEvent(
                     new TelegramMessageEvent(telegramUserInfo.getChatId(), message));
+        }
+    }
+
+    @Override
+    public void sendGlobalNotification(String message) {
+        List<TelegramUserInfo> telegramUsers = telegramUserInfoRepository.findAll();
+        if (!telegramUsers.isEmpty()) {
+            telegramUsers.stream()
+                    .map(tgUsers -> new TelegramMessageEvent(tgUsers.getChatId(), message))
+                    .forEach(eventPublisher::publishEvent);
         }
     }
 }

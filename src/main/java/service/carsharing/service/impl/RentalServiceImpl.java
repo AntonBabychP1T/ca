@@ -3,16 +3,20 @@ package service.carsharing.service.impl;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import service.carsharing.dto.rental.RentalRequestDto;
 import service.carsharing.dto.rental.RentalResponseDto;
 import service.carsharing.mapper.RentalMapper;
 import service.carsharing.model.Car;
+import service.carsharing.model.Payment;
 import service.carsharing.model.Rental;
 import service.carsharing.model.User;
 import service.carsharing.repository.CarRepository;
+import service.carsharing.repository.PaymentRepository;
 import service.carsharing.repository.RentalRepository;
 import service.carsharing.repository.UserRepository;
 import service.carsharing.service.NotificationService;
@@ -26,10 +30,14 @@ public class RentalServiceImpl implements RentalService {
     private final CarRepository carRepository;
     private final RentalMapper rentalMapper;
     private final NotificationService notificationService;
+    private final PaymentRepository paymentRepository;
 
     @Override
     @Transactional
     public RentalResponseDto addNewRental(RentalRequestDto requestDto) {
+        if (!canBorrow(requestDto.userId())) {
+            throw new RuntimeException("You have expired payments, denied access");
+        }
         Car car = getCarById(requestDto.carId());
         if (car.getInventory() < 1) {
             notificationService.sendNotification(requestDto.userId(),
@@ -80,6 +88,36 @@ public class RentalServiceImpl implements RentalService {
         notificationService.sendNotification(userById, "You successfully return your rental"
                 + " with id: " + rentalId);
         return responseDto;
+    }
+
+    @Scheduled(cron = "0 0 0 * * *")
+    public void checkOverdueRentals() {
+        LocalDate today = LocalDate.now();
+        List<Rental> overdueRentals =
+                rentalRepository.findAllByReturnDateBeforeAndActualReturnDateIsNull(today);
+        if (overdueRentals.isEmpty()) {
+            notificationService.sendGlobalNotification("No rentals overdue today!");
+            return;
+        }
+        for (Rental rental : overdueRentals) {
+            String message = createOverdueRentalMessage(rental);
+            notificationService.sendNotification(rental.getUser().getId(), message);
+        }
+    }
+
+    private boolean canBorrow(Long userId) {
+        List<Payment> userPayments = paymentRepository.getAllByUserId(userId);
+        Optional<Payment.Status> expiredState = userPayments.stream().map(Payment::getStatus)
+                .filter(status -> status == Payment.Status.EXPIRED)
+                .findAny();
+        return expiredState.isEmpty();
+    }
+
+    private String createOverdueRentalMessage(Rental rental) {
+        return "Overdue rental alert! Rental ID: " + rental.getId()
+                + ", User ID: " + rental.getUser().getId()
+                + ", Car ID: " + rental.getCar().getId()
+                + ", Return Date: " + rental.getReturnDate();
     }
 
     private User getUserByEmail(String email) {

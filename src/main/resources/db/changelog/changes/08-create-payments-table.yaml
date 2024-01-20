@@ -22,7 +22,7 @@ databaseChangeLog:
                     references: rentals(id)
               - column:
                   name: status
-                  type: "ENUM('PAID', 'PENDING', 'CANCEL')"
+                  type: "ENUM('PAID', 'PENDING', 'CANCEL', 'EXPIRED')"
                   constraints:
                     nullable: false
               - column:
