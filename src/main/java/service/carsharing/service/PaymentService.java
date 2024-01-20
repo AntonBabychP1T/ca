@@ -11,4 +11,6 @@ public interface PaymentService {
     PaymentResponseDto checkSuccessfulPayments(String id);
 
     PaymentResponseDto canceledPayment(String id);
+
+    PaymentResponseDto renewPaymentSession(Long paymentId, String email);
 }

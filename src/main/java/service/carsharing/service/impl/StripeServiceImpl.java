@@ -12,6 +12,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import service.carsharing.dto.payment.PaymentResponseDto;
 import service.carsharing.mapper.PaymentMapper;
@@ -67,6 +68,10 @@ public class StripeServiceImpl implements PaymentService {
     public PaymentResponseDto checkSuccessfulPayments(String id) {
         Payment payment = getPaymentBySessionId(id);
         payment.setStatus(Payment.Status.PAID);
+        String message = String.format("Payment with id: %d for the amount: %s$ successful!",
+                payment.getId(), payment.getAmountToPay().toString());
+        notificationService.sendNotification(getUserIdByPayment(payment),
+                message);
         return paymentMapper.toDto(paymentRepository.save(payment));
     }
 
@@ -74,7 +79,53 @@ public class StripeServiceImpl implements PaymentService {
     public PaymentResponseDto canceledPayment(String id) {
         Payment payment = getPaymentBySessionId(id);
         payment.setStatus(Payment.Status.CANCEL);
+        notificationService.sendNotification(getUserIdByPayment(payment),
+                "Payment failure! The payment can be made later,"
+                        + " but not after 24 hours!");
         return paymentMapper.toDto(paymentRepository.save(payment));
+    }
+
+    @Override
+    public PaymentResponseDto renewPaymentSession(Long paymentId, String email) {
+        Payment payment = paymentRepository.findById(paymentId).orElseThrow(
+                () -> new EntityNotFoundException("Can't find payment with id: " + paymentId)
+        );
+        Rental rental = rentalRepository.findById(payment.getRentalId()).orElseThrow(
+                () -> new EntityNotFoundException("Can't find rental with id: "
+                        + payment.getRentalId())
+        );
+        if (!rental.getUser().getEmail().equals(email)) {
+            throw new RuntimeException("You do not have permission to renew this payment session");
+        }
+        if (payment.getStatus().equals(Payment.Status.PAID)) {
+            throw new IllegalStateException("Payment session cannot be renewed");
+        }
+        try {
+            Session newSession = createStripeSession(rental);
+            payment.setStatus(Payment.Status.PENDING);
+            payment.setSessionId(newSession.getId());
+            payment.setSessionUrl(new URL(newSession.getUrl()));
+            paymentRepository.save(payment);
+            return paymentMapper.toDto(payment);
+        } catch (StripeException | MalformedURLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Scheduled(cron = "0 * * * * *")
+    public void checkExpiredStripeSessions() {
+        List<Payment> payments = paymentRepository.findAllByStatus(Payment.Status.PENDING);
+        for (Payment payment : payments) {
+            try {
+                Session session = Session.retrieve(payment.getSessionId());
+                if (session.getStatus().equals("expired")) {
+                    payment.setStatus(Payment.Status.EXPIRED);
+                    paymentRepository.save(payment);
+                }
+            } catch (StripeException e) {
+                throw new RuntimeException("Can't retrieve session for payment:" + payment, e);
+            }
+        }
     }
 
     private Long getUserIdByPayment(Payment payment) {
