@@ -6,8 +6,6 @@ import java.math.BigDecimal;
 
 public record CarRequestDto(
         @NotNull
-        String name,
-        @NotNull
         String model,
         @NotNull
         String brand,
