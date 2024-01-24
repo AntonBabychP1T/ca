@@ -3,11 +3,11 @@ package service.carsharing.config;
 import org.testcontainers.containers.MySQLContainer;
 
 public class CustomMySqlContainer extends MySQLContainer<CustomMySqlContainer> {
-    private static final String BD_IMAGE = "mysql:8";
+    private static final String DB_IMAGE = "mysql:8";
     private static CustomMySqlContainer mySqlContainer;
 
     private CustomMySqlContainer() {
-        super(BD_IMAGE);
+        super(DB_IMAGE);
     }
 
     public static synchronized CustomMySqlContainer getInstance() {
@@ -20,6 +20,9 @@ public class CustomMySqlContainer extends MySQLContainer<CustomMySqlContainer> {
     @Override
     public void start() {
         super.start();
+        System.setProperty("TEST_DB_URL", mySqlContainer.getJdbcUrl());
+        System.setProperty("TEST_DB_USERNAME", mySqlContainer.getUsername());
+        System.setProperty("TEST_DB_PASSWORD", mySqlContainer.getPassword());
     }
 
     @Override

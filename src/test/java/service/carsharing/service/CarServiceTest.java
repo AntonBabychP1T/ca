@@ -35,7 +35,6 @@ public class CarServiceTest {
     private static final Integer VALID_INVENTORY = 2;
     private static final BigDecimal VALID_FEE = BigDecimal.TEN;
     private static final boolean NOT_DELETED = false;
-    private static final String VALID_NAME = "Valid name";
 
     @InjectMocks
     private CarServiceImpl carService;

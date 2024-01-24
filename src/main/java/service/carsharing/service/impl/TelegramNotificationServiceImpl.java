@@ -12,7 +12,7 @@ import service.carsharing.telegram.TelegramMessageEvent;
 
 @RequiredArgsConstructor
 @Service
-public class NotificationServiceImpl implements NotificationService {
+public class TelegramNotificationServiceImpl implements NotificationService {
     private final ApplicationEventPublisher eventPublisher;
     private final TelegramUserInfoRepository telegramUserInfoRepository;
 
