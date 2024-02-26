@@ -37,11 +37,8 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserWithRoleResponseDto updateRole(Long id, UserUpdateRoleRequestDto requestDto) {
-        User user = userRepository.findByIdAndDeletedFalse(id)
-                .orElseThrow(() -> new EntityNotFoundException("Can't find user with id: " + id));
-        Role.RoleName roleName = Role.RoleName.valueOf(requestDto.role());
-        Role role = roleRepository.findByName(roleName).orElseThrow(
-                        () -> new EntityNotFoundException("Can't find role with name=" + roleName));
+        User user = getUserById(id);
+        Role role = getRoleByRoleName(requestDto.role());
         user.getRoles().add(role);
         return userMapper.toDtoWithRole(userRepository.save(user));
     }
@@ -62,5 +59,16 @@ public class UserServiceImpl implements UserService {
     private User getUserByEmail(String email) {
         return userRepository.findByEmail(email).orElseThrow(
                 () -> new EntityNotFoundException("Can't find user with email: " + email));
+    }
+
+    private User getUserById(Long id) {
+        return userRepository.findByIdAndDeletedFalse(id)
+                .orElseThrow(() -> new EntityNotFoundException("Can't find user with id: " + id));
+    }
+
+    private Role getRoleByRoleName(String role) {
+        Role.RoleName roleName = Role.RoleName.valueOf(role);
+        return roleRepository.findByName(roleName).orElseThrow(
+                () -> new EntityNotFoundException("Can't find role with name=" + roleName));
     }
 }

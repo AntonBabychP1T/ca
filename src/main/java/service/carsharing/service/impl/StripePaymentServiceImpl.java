@@ -2,7 +2,6 @@ package service.carsharing.service.impl;
 
 import com.stripe.exception.StripeException;
 import com.stripe.model.checkout.Session;
-import com.stripe.param.checkout.SessionCreateParams;
 import jakarta.persistence.EntityNotFoundException;
 import java.math.BigDecimal;
 import java.net.MalformedURLException;
@@ -11,7 +10,6 @@ import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import service.carsharing.dto.payment.PaymentResponseDto;
@@ -23,11 +21,11 @@ import service.carsharing.repository.RentalRepository;
 import service.carsharing.service.NotificationService;
 import service.carsharing.service.PaymentService;
 import service.carsharing.service.UserService;
+import service.carsharing.stripe.StripeSessionService;
 
 @RequiredArgsConstructor
 @Service
-public class StripeServiceImpl implements PaymentService {
-    private static final String DEFAULT_CURRENCY = "usd";
+public class StripePaymentServiceImpl implements PaymentService {
     private static final BigDecimal CONVERT_TO_CENT = BigDecimal.valueOf(100L);
 
     private final PaymentRepository paymentRepository;
@@ -35,10 +33,7 @@ public class StripeServiceImpl implements PaymentService {
     private final RentalRepository rentalRepository;
     private final UserService userService;
     private final NotificationService notificationService;
-    @Value("${STRIPE_SUCCESS_LINK}")
-    private String successUrl;
-    @Value("${STRIPE_CANCEL_LINK}")
-    private String cancelUrl;
+    private final StripeSessionService stripeSessionService;
 
     @Override
     public PaymentResponseDto createPayment(String email, Long rentalId) {
@@ -46,7 +41,9 @@ public class StripeServiceImpl implements PaymentService {
         Rental rental = validateAndGetRental(rentalId, userId);
         Payment payment = preparePayment(rental);
         try {
-            Session session = createStripeSession(rental);
+            Session session = stripeSessionService.createStripeSession(
+                    getTotalAmountCounter(rental), "Rental Payment"
+            );
             payment.setSessionId(session.getId());
             payment.setSessionUrl(new URL(session.getUrl()));
             notificationService.sendNotification(userId, "Payment URL: "
@@ -101,7 +98,9 @@ public class StripeServiceImpl implements PaymentService {
             throw new IllegalStateException("Payment session cannot be renewed");
         }
         try {
-            Session newSession = createStripeSession(rental);
+            Session newSession = stripeSessionService.createStripeSession(
+                    getTotalAmountCounter(rental), "Rental repayment"
+            );
             payment.setStatus(Payment.Status.PENDING);
             payment.setSessionId(newSession.getId());
             payment.setSessionUrl(new URL(newSession.getUrl()));
@@ -117,7 +116,7 @@ public class StripeServiceImpl implements PaymentService {
         List<Payment> payments = paymentRepository.findAllByStatus(Payment.Status.PENDING);
         for (Payment payment : payments) {
             try {
-                Session session = Session.retrieve(payment.getSessionId());
+                Session session = stripeSessionService.retrieveSession(payment.getSessionId());
                 if (session.getStatus().equals("expired")) {
                     payment.setStatus(Payment.Status.EXPIRED);
                     paymentRepository.save(payment);
@@ -159,27 +158,6 @@ public class StripeServiceImpl implements PaymentService {
         payment.setType(rental.getActualReturnDate().isAfter(rental.getReturnDate())
                 ? Payment.Type.FINE : Payment.Type.PAYMENT);
         return payment;
-    }
-
-    private Session createStripeSession(Rental rental) throws StripeException {
-        SessionCreateParams params = SessionCreateParams.builder()
-                .setSuccessUrl(successUrl)
-                .setCancelUrl(cancelUrl)
-                .setMode(SessionCreateParams.Mode.PAYMENT)
-                .addLineItem(
-                        SessionCreateParams.LineItem.builder()
-                                .setQuantity(1L)
-                                .setPriceData(SessionCreateParams.LineItem.PriceData.builder()
-                                        .setCurrency(DEFAULT_CURRENCY)
-                                        .setUnitAmountDecimal(getTotalAmountCounter(rental))
-                                        .setProductData(SessionCreateParams.LineItem
-                                                .PriceData.ProductData.builder()
-                                                .setName("Rental Payment")
-                                                .build())
-                                        .build())
-                                .build())
-                .build();
-        return Session.create(params);
     }
 
     private BigDecimal getTotalAmountCounter(Rental rental) {

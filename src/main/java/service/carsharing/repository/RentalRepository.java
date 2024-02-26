@@ -12,4 +12,6 @@ public interface RentalRepository extends JpaRepository<Rental, Long> {
     List<Rental> getAllByUserIdAndDeletedFalse(Long id);
 
     List<Rental> findAllByReturnDateBeforeAndActualReturnDateIsNull(LocalDate date);
+
+    Object validateAndGetRental(Long rentalId, Long id);
 }
