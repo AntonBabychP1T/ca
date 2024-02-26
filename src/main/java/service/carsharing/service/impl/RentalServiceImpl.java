@@ -25,6 +25,8 @@ import service.carsharing.service.RentalService;
 @RequiredArgsConstructor
 @Service
 public class RentalServiceImpl implements RentalService {
+    private static final Integer MIN_REQUIRED_CAR_AVAILABLE = 1;
+
     private final RentalRepository rentalRepository;
     private final UserRepository userRepository;
     private final CarRepository carRepository;
@@ -39,13 +41,7 @@ public class RentalServiceImpl implements RentalService {
             throw new RuntimeException("You have expired payments, denied access");
         }
         Car car = getCarById(requestDto.carId());
-        if (car.getInventory() < 1) {
-            notificationService.sendNotification(requestDto.userId(),
-                    "There is no free available car with id: "
-                            + requestDto.carId());
-            throw new RuntimeException("There is no free available car with id: "
-                    + requestDto.carId());
-        }
+        checkIsExistsAvailableCar(requestDto, car);
         car.setInventory(car.getInventory() - 1);
         carRepository.save(car);
         RentalResponseDto responseDto = rentalMapper.toDto(rentalRepository
@@ -111,6 +107,16 @@ public class RentalServiceImpl implements RentalService {
                 .filter(status -> status == Payment.Status.EXPIRED)
                 .findAny();
         return expiredState.isEmpty();
+    }
+
+    private void checkIsExistsAvailableCar(RentalRequestDto requestDto, Car car) {
+        if (car.getInventory() < MIN_REQUIRED_CAR_AVAILABLE) {
+            notificationService.sendNotification(requestDto.userId(),
+                    "There is no free available car with id: "
+                            + requestDto.carId());
+            throw new RuntimeException("There is no free available car with id: "
+                    + requestDto.carId());
+        }
     }
 
     private String createOverdueRentalMessage(Rental rental) {

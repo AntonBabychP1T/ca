@@ -2,7 +2,6 @@ package service.carsharing.service.impl;
 
 import jakarta.persistence.EntityNotFoundException;
 import java.util.List;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -34,22 +33,23 @@ public class CarServiceImpl implements CarService {
 
     @Override
     public CarResponseDto getCar(Long id) {
-        Optional<Car> carById = carRepository.findByIdAndDeletedFalse(id);
-        if (carById.isPresent()) {
-            return carMapper.toDto(carById.get());
-        }
-        throw new EntityNotFoundException("Can't find car with id: " + id);
+        return carMapper.toDto(getCarById(id));
     }
 
     @Override
     public CarResponseDto updateCar(Long id, CarRequestDto requestDto) {
-        carRepository.findByIdAndDeletedFalse(id).orElseThrow(
-                () -> new EntityNotFoundException("Can't find car with id: " + id));
-        return carMapper.toDto(carRepository.save(carMapper.toModel(requestDto)));
+        Car car = getCarById(id);
+        carMapper.updateCar(requestDto, car);
+        return carMapper.toDto(carRepository.save(car));
     }
 
     @Override
     public void deleteCar(Long id) {
         carRepository.softDelete(id);
+    }
+
+    private Car getCarById(Long id) {
+        return carRepository.findByIdAndDeletedFalse(id).orElseThrow(
+                () -> new EntityNotFoundException("Can't find car with id: " + id));
     }
 }

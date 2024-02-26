@@ -133,19 +133,23 @@ public class CarServiceTest {
     }
 
     @Test
+    @DisplayName("Verify updateCar() method works")
     public void updateCar_ValidIdAndRequestDto_UpdaterCar() {
+        // Arrange
         Car car = createValidCar();
         CarRequestDto requestDto = createValidCarRequestDto();
         CarResponseDto expected = createValidCarResponseDto();
-        when(carRepository.findByIdAndDeletedFalse(VALID_ID))
-                .thenReturn(Optional.of(car));
-        when(carMapper.toModel(requestDto)).thenReturn(car);
+        when(carRepository.findByIdAndDeletedFalse(VALID_ID)).thenReturn(Optional.of(car));
         when(carRepository.save(car)).thenReturn(car);
         when(carMapper.toDto(car)).thenReturn(expected);
 
+        // Act
         CarResponseDto actual = carService.updateCar(VALID_ID, requestDto);
 
+        // Assert
         assertEquals(expected, actual);
+        verify(carMapper).updateCar(requestDto, car);
+        verify(carRepository).save(car);
     }
 
     @Test
